@@ -9,10 +9,15 @@ const routes = [
         name: 'Home',
         component: () => import('../views/HomePage.vue')
     }
+    , {
+        path: '/components',
+        name: 'Components',
+        component: () => import('../views/ComponentsPage.vue')
+    }
 ];
 
 const router = new VueRouter({
-    mode: 'hash',
+    mode: 'hash', //the # helps avoid server configuration issues
     routes
 });
 
