@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/wep-anonymous/UM-Practice-Project/issues"
   },
-  "homepage": "https://github.com/wep-anonymous/UM-Practice-Project#readme"
+  "homepage": "https://github.com/wep-anonymous/UM-Practice-Project#readme",
+  "dependencies": {
+    "vue": "^2.7.16"
+  }
 }
