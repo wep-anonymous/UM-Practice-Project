@@ -1,7 +1,9 @@
 <template>
   <div id="app">
-    <h1>UM Practice Project</h1>
-    <p>Vue 2 Application</p>
+    <nav>
+      <router-link to="/">首頁</router-link>
+    </nav>
+    <router-view></router-view>
   </div>
 </template>
 
@@ -10,10 +12,3 @@ export default {
   name: 'App'
 }
 </script>
-
-<style>
-#app {
-  text-align: center;
-  padding: 50px;
-}
-</style>
