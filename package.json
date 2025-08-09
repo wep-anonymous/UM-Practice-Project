@@ -19,7 +19,8 @@
   },
   "homepage": "https://github.com/wep-anonymous/UM-Practice-Project#readme",
   "dependencies": {
-    "vue": "^2.7.16"
+    "vue": "^2.7.16",
+    "vue-router": "^3.6.5"
   },
   "devDependencies": {
     "css-loader": "^7.1.2",
