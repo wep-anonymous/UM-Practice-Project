@@ -1,9 +1,9 @@
 <template>
   <div class="stacked-wrap">
-    <!-- bar -->
+    <!-- ECharts mount (ref-based, no DOM query) -->
     <div ref="chart" class="bar"></div>
 
-    <!-- custom legend -->
+    <!-- Custom legend; hover/focus syncs with chart highlight -->
     <ul class="legend">
       <li
         v-for="(seg, idx) in segments"
@@ -34,7 +34,7 @@ export default {
     return {
       chart: null,
       hoverIndex: -1,
-      // values & colors match the UI: 15 / 25 / 35 / 25
+      // Data model: labels, colors, and percentages (sum = 100)
       segments: [
         { name: '北部', color: '#16a34a', value: 15, borderRadius: [10, 0, 0, 10] },
         { name: '中部', color: '#2563eb', value: 25 },
@@ -47,7 +47,7 @@ export default {
     this.chart = echarts.init(this.$refs.chart)
     this.render()
 
-    // sync legend highlight when hovering the bar
+    // Chart → legend sync: update hoverIndex on segment hover
     this.chart.on('mouseover', (p) => {
       if (p.componentType === 'series') this.hoverIndex = p.seriesIndex
     })
@@ -56,6 +56,7 @@ export default {
     window.addEventListener('resize', this.onResize)
   },
   beforeDestroy () {
+    // Cleanup handlers and dispose chart to prevent leaks
     window.removeEventListener('resize', this.onResize)
     if (this.chart) this.chart.dispose()
   },
@@ -64,37 +65,37 @@ export default {
       const option = {
         animation: true,
         grid: { left: 24, right: 24, top: 10, bottom: 0, height: 36 },
-        xAxis: { type: 'value', max: 100, show: false },
-        yAxis: { type: 'category', data: [''], show: false },
+        xAxis: { type: 'value', max: 100, show: false }, // Percent scale
+        yAxis: { type: 'category', data: [''], show: false }, // Single row
         tooltip: {
           trigger: 'item',
-          appendToBody: true,
+          appendToBody: true, // Prevent clipping in scrollable containers
           backgroundColor: '#111827',
           borderColor: 'transparent',
           textStyle: { color: '#fff', fontSize: 14, fontWeight: 600 },
           extraCssText: 'padding:8px 12px;border-radius:12px;box-shadow:0 8px 20px rgba(0,0,0,.2);',
           formatter: (params) => {
-            // includes colored dot, series name, and percentage value
+            // Marker + series name + percentage
             return `${params.marker} ${params.seriesName}：${params.value}%`
           }
         },
         series: this.segments.map((seg, idx) => ({
           name: seg.name,
           type: 'bar',
-          stack: 'total',
+          stack: 'total',                // One stacked bar (all series share the stack)
           barWidth: 16,
           data: [seg.value],
-          itemStyle: { color: seg.color, borderRadius: seg.borderRadius || 0 },
-          emphasis: { itemStyle: { opacity: 1 } },
-          blur: { itemStyle: { opacity: 0.35 } },
-          z: 10 - idx
+          itemStyle: { color: seg.color, borderRadius: seg.borderRadius || 0 }, // Rounded ends only
+          emphasis: { itemStyle: { opacity: 1 } }, // Full opacity on focus
+          blur: { itemStyle: { opacity: 0.35 } },  // Dim non-focused parts
+          z: 10 - idx                     // Draw order to keep left slices above
         }))
       }
       this.chart.setOption(option)
     },
     onEnter (idx) {
       this.hoverIndex = idx
-      // highlight the corresponding segment in the bar
+      // Legend → chart sync via dispatchAction
       this.chart.dispatchAction({ type: 'highlight', seriesIndex: idx, dataIndex: 0 })
       this.segments.forEach((_, i) => {
         if (i !== idx) this.chart.dispatchAction({ type: 'downplay', seriesIndex: i, dataIndex: 0 })
@@ -102,7 +103,7 @@ export default {
     },
     onLeave () {
       this.hoverIndex = -1
-      // reset highlights
+      // Reset all highlights
       this.segments.forEach((_, i) => {
         this.chart.dispatchAction({ type: 'downplay', seriesIndex: i, dataIndex: 0 })
       })
@@ -116,7 +117,7 @@ export default {
 .stacked-wrap{ padding: 6px 8px 0; }
 .bar{ width: 100%; height: 72px; }
 
-/* legend styles */
+/* Custom legend grid */
 .legend{
   display: grid;
   grid-template-columns: repeat(4, 1fr);

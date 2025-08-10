@@ -32,9 +32,9 @@ export default {
 
 <style scoped>
 .custom-heading {
-  font-size: 28px;     /* your new size */
-  color: #2563eb;      /* blue */
-  margin: 0;           /* optional: reset margins */
+  font-size: 28px;    
+  color: #2563eb;     
+  margin: 0;          
 }
 
 .blue-line {

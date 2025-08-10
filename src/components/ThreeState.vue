@@ -1,4 +1,5 @@
 <template>
+  <!-- ARIA tablist + keyboard support; three-state selector -->
   <div class="triple" role="tablist" aria-label="三段選擇">
     <button
       class="opt is-agree"
@@ -29,11 +30,12 @@
 <script>
 export default {
   name: 'ThreeState',
-  model: { prop: 'value', event: 'input' },
+  model: { prop: 'value', event: 'input' }, // custom v-model binding
   props: {
-    value: { type: String, default: 'default' } // 'agree' | 'default' | 'reject'
+    value: { type: String, default: 'default' } // allowed: 'agree' | 'default' | 'reject'
   },
   methods: {
+    // emit only on change (prevents redundant updates)
     pick (v) { if (v !== this.value) this.$emit('input', v) }
   }
 }
@@ -42,11 +44,11 @@ export default {
 <style scoped>
 .triple {
   display: flex;
-  align-items: stretch; /* stretch buttons to full height */
+  align-items: stretch; /* full-height buttons */
   border-radius: 14px;
   background: #ffffff;
   box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.15);
-  overflow: hidden; /* ensure active background has rounded edges */
+  overflow: hidden; /* preserve rounded corners on active background */
 }
 .opt{
   --w:88px; --h:44px; --r:14px;
@@ -55,27 +57,29 @@ export default {
   transition:background .2s ease, box-shadow .2s ease;
   outline:none;
 }
-/* .opt:focus{ box-shadow:0 0 0 3px rgba(99,102,241,.25); } */
+/* Optional focus ring (uncomment for visible keyboard focus)
+.opt:focus{ box-shadow:0 0 0 3px rgba(99,102,241,.25); }
+*/
 
 .dot {
   --size: 14px;
   position: absolute;
   top: 50%;
-  left: 50%; 
+  left: 50%;
   transform: translate(-50%, -50%);
   width: var(--size);
   height: var(--size);
   border-radius: 9999px;
-  background: currentColor;
-  transition: background 0.2s ease; /* removed left/transform transition */
+  background: currentColor; /* centered dot uses currentColor */
+  transition: background 0.2s ease;
 }
 
-/* 顏色 */
-.is-agree{ color:#16a34a; }   /* 綠 */
-.is-default{ color:#2563eb; } /* 藍 */
-.is-reject{ color:#dc2626; }  /* 紅 */
+/* state colors */
+.is-agree{ color:#16a34a; }   /* green */
+.is-default{ color:#2563eb; } /* blue */
+.is-reject{ color:#dc2626; }  /* red */
 
-/* 選取時彩色膠囊、白點置中（符合截圖） */
+/* active: filled capsule + centered white dot */
 .opt.active{ color:#fff; }
 .is-agree.active{ background:#16a34a; }
 .is-default.active{ background:#2563eb; }
