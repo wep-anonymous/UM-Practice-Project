@@ -1,176 +1,146 @@
 <template>
   <div class="components-page">
-    <h1>自定義組件</h1>
-    
-    <div class="component-card">
-      <h2>Status 開關組件</h2>
-      <div class="component-demo">
-        <cus-btn v-model="toggleValue1" />
+  <h1 class="custom-heading">自定義組件</h1>
+  <hr class="blue-line">
+  <div class="section">
+  <h1><strong>Status</strong> 開關組件</h1>
+    <section class="card">
+      <h1><strong>狀態</strong></h1>
+      <div class="demo">
+        <cus-btn v-model="toggleValue1"/>
       </div>
-      <div class="status-text">
-        目前設定狀態：<span :class="toggleValue1 ? 'on' : 'off'">{{ toggleValue1 ? '開啟' : '關閉' }}</span>
+    </section>
+      <section class="demo stack">
+      <h3>目前設定狀態：</h3>
+      <p class="hint">狀態：<span >{{ toggleValue1 ? '開啟' : '關閉' }}</span></p> 
+      </section>
       </div>
+<!-- :class="toggleValue1 ? 'on' : 'off'" -->
+<div class="section">
+<h1><strong>TripleChoice</strong> 選擇組件</h1>
+    <section class="card">
+        <h1><strong>權限申請</strong></h1>
+      <div class="demo">
+        <three-state v-model="threeStateValue1"/>
+      </div>
+    </section>
+    <section class="demo stack">
+    <h3>目前選擇狀態：</h3>
+    <p class="hint">權限申請：<span>{{ getStateLabel(threeStateValue1) }}</span></p>
+    </section>
     </div>
-    
-    <div class="component-card">
-      <h2>TripleChoice 選擇組件</h2>
-      <div class="component-demo">
-        <three-state v-model="threeStateValue1" />
-      </div>
-      <div class="status-text">
-        目前選擇狀態：<span>{{ getStateLabel(threeStateValue1) }}</span>
-      </div>
-    </div>
-    
-    <div class="component-card">
-      <h2>多個組件綁定測試</h2>
-      <div class="multi-demo">
-        <div class="demo-row">
-          <label>開關 1:</label>
-          <cus-btn v-model="toggleValue1" />
-          <span class="value">{{ toggleValue1 }}</span>
+<!-- #f6f8fb -->
+    <!-- <section class="card">
+      <h1>多個組件綁定測試</h1>
+      <div class="grid">
+        <div class="row">
+          <label>開關 1：</label>
+          <cus-btn v-model="toggleValue1"/>
+          <span class="kv">{{ toggleValue1 }}</span>
         </div>
-        <div class="demo-row">
-          <label>開關 2:</label>
-          <cus-btn v-model="toggleValue2" />
-          <span class="value">{{ toggleValue2 }}</span>
+        <div class="row">
+          <label>開關 2：</label>
+          <cus-btn v-model="toggleValue2"/>
+          <span class="kv">{{ toggleValue2 }}</span>
         </div>
-        <div class="demo-row">
-          <label>選擇器 1:</label>
-          <three-state v-model="threeStateValue1" />
-          <span class="value">{{ threeStateValue1 }}</span>
+        <div class="row">
+          <label>選擇器 1：</label>
+          <three-state v-model="threeStateValue1"/>
+          <span class="kv">{{ threeStateValue1 }}</span>
         </div>
-        <div class="demo-row">
-          <label>選擇器 2:</label>
-          <three-state v-model="threeStateValue2" />
-          <span class="value">{{ threeStateValue2 }}</span>
+        <div class="row">
+          <label>選擇器 2：</label>
+          <three-state v-model="threeStateValue2"/>
+          <span class="kv">{{ threeStateValue2 }}</span>
         </div>
       </div>
-    </div>
+    </section> -->
   </div>
 </template>
 
 <script>
-import CusBtn from '../components/CusBtn.vue';
-import ThreeState from '../components/ThreeState.vue';
+import CusBtn from '../components/CusBtn.vue'
+import ThreeState from '../components/ThreeState.vue'
 
 export default {
   name: 'ComponentsPage',
-  components: {
-    CusBtn,
-    ThreeState
-  },
-  data() {
+  components: { CusBtn, ThreeState },
+  data () {
     return {
       toggleValue1: false,
       toggleValue2: true,
       threeStateValue1: 'default',
       threeStateValue2: 'agree'
-    };
+    }
   },
   methods: {
-    getStateLabel(state) {
-      const labels = {
-        agree: '同意',
-        default: '預設',
-        reject: '拒絕'
-      };
-      return labels[state] || '未知';
+    getStateLabel (s) {
+      return ({ agree: '同意', default: '預設', reject: '拒絕' }[s] || '未知')
     }
   }
 }
 </script>
 
 <style scoped>
-.components-page {
-  max-width: 800px;
-  margin: 0 auto;
+.custom-heading {
+  font-size: 28px;     /* your new size */
+  color: #2563eb;      /* blue */
+  margin: 0;           /* optional: reset margins */
 }
 
-h1 {
-  color: #333;
-  font-size: 24px;
-  margin-bottom: 2rem;
-  text-align: center;
+.blue-line {
+  border: none;
+  height: 2px;
+  background-color: #2563eb;
+  margin: 8px 0;
 }
 
-.component-card {
-  background: white;
-  padding: 2rem;
-  border-radius: 8px;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+.section{ max-width:1064px; margin-top:30px ; padding:32px 16px; background:#fff; border-radius: 15px;box-shadow:
+    0 0 0 1px rgba(15,23,42,.08),
+    0 8px 24px rgba(15,23,42,.25); }
+
+/* 卡片外觀 */
+.card{
+  background:#fff; border-radius:14px; padding:24px;
+  box-shadow:0 8px 24px rgba(15,23,42,.06);
+  border:1px solid rgba(15,23,42,.25);
+  margin: 24px 0;
+}
+h1{ font-size:22px; color:#0f172a; margin:0 0 16px; }
+h1 strong{ font-weight:800; margin-right:8px; }
+
+h3{ font-size:18px; color:#0f172a; margin:0 0 12px; margin-bottom:20px;}
+
+
+/* 示範容器（淡灰、圓角、內陰影） */
+.demo{
+  display:flex; align-items:center; min-height:92px;
+  padding:20px; border-radius:14px;
+  background:#f6f8fb; box-shadow:inset 0 1px 0 rgba(0,0,0,.03);
+  margin-bottom:12px;
 }
 
-.component-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+.demo.stack { 
+  flex-direction: column; 
+  align-items: flex-start; 
+  gap: 15px;            /* spacing between h3 and p */
 }
 
-.component-card h2 {
-  color: #666;
-  font-size: 16px;
-  margin-bottom: 1.5rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid #e0e0e0;
-}
+/* 提示文字 */
+.hint{ margin:0; color:#64748b; font-size:14px; }
+.hint .on{ color:#16a34a; font-weight:700; }
+.hint .off{ color:#94a3b8; font-weight:700; }
 
-.component-demo {
-  display: flex;
-  justify-content: center;
-  padding: 2rem;
-  background: #fafafa;
-  border-radius: 4px;
-  margin-bottom: 1rem;
+/* 多組元件列表 */
+.grid{ display:flex; flex-direction:column; gap:16px; }
+.row{
+  display:flex; align-items:center; gap:12px;
+  padding:12px 16px; border-radius:12px; background:#f6f8fb;
 }
-
-.status-text {
-  text-align: center;
-  color: #666;
-  font-size: 14px;
-}
-
-.status-text span {
-  font-weight: bold;
-}
-
-.status-text span.on {
-  color: #4CAF50;
-}
-
-.status-text span.off {
-  color: #999;
-}
-
-.multi-demo {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.demo-row {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  background: #fafafa;
-  border-radius: 4px;
-}
-
-.demo-row label {
-  width: 100px;
-  color: #666;
-  font-size: 14px;
-}
-
-.demo-row .value {
-  margin-left: auto;
-  padding: 0.25rem 0.75rem;
-  background: #e3f2fd;
-  color: #1976d2;
-  border-radius: 4px;
-  font-size: 12px;
-  font-family: 'Courier New', monospace;
+.row label{ width:96px; color:#475569; font-size:14px; }
+.kv{
+  margin-left:auto; font-family:ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size:12px; padding:2px 8px; border-radius:6px;
+  color:#1d4ed8; background:#e8f1fe;
 }
 </style>

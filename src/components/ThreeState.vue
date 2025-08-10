@@ -1,120 +1,84 @@
 <template>
-  <div class="three-state-container">
-    <span class="label">權限申請</span>
-    <div class="three-state">
-      <div class="dots-container">
-        <div 
-          v-for="state in states" 
-          :key="state.value"
-          class="dot-wrapper"
-          :class="{ active: localValue === state.value }"
-          @click="selectState(state.value)"
-        >
-          <div class="dot" :class="state.value"></div>
-        </div>
-      </div>
-    </div>
+  <div class="triple" role="tablist" aria-label="三段選擇">
+    <button
+      class="opt is-agree"
+      :class="{ active: value === 'agree' }"
+      role="tab" :aria-selected="value==='agree'"
+      @click="pick('agree')" @keydown.enter.prevent="pick('agree')" @keydown.space.prevent="pick('agree')">
+      <span class="dot"></span>
+    </button>
+
+    <button
+      class="opt is-default"
+      :class="{ active: value === 'default' }"
+      role="tab" :aria-selected="value==='default'"
+      @click="pick('default')" @keydown.enter.prevent="pick('default')" @keydown.space.prevent="pick('default')">
+      <span class="dot"></span>
+    </button>
+
+    <button
+      class="opt is-reject"
+      :class="{ active: value === 'reject' }"
+      role="tab" :aria-selected="value==='reject'"
+      @click="pick('reject')" @keydown.enter.prevent="pick('reject')" @keydown.space.prevent="pick('reject')">
+      <span class="dot"></span>
+    </button>
   </div>
 </template>
 
 <script>
 export default {
   name: 'ThreeState',
+  model: { prop: 'value', event: 'input' },
   props: {
-    value: {
-      type: String,
-      default: 'default'
-    }
-  },
-  data() {
-    return {
-      localValue: this.value,
-      states: [
-        { value: 'agree', label: '同意' },
-        { value: 'default', label: '預設' },
-        { value: 'reject', label: '拒絕' }
-      ]
-    };
-  },
-  watch: {
-    value(newVal) {
-      this.localValue = newVal;
-    },
-    localValue(newVal) {
-      this.$emit('input', newVal);
-    }
+    value: { type: String, default: 'default' } // 'agree' | 'default' | 'reject'
   },
   methods: {
-    selectState(state) {
-      this.localValue = state;
-    }
+    pick (v) { if (v !== this.value) this.$emit('input', v) }
   }
 }
 </script>
 
 <style scoped>
-
-.three-state-container {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.label {
-  font-size: 14px;
-  color: #333;
-  font-weight: 500;
-}
-
-.three-state {
-  display: inline-block;
-}
-
-.dots-container {
+.triple {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px;
-  background-color: #f5f5f5;
-  border-radius: 20px;
+  align-items: stretch; /* stretch buttons to full height */
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.15);
+  overflow: hidden; /* ensure active background has rounded edges */
 }
-
-.dot-wrapper {
-  padding: 4px 12px;
-  border-radius: 15px;
-  cursor: pointer;
-  transition: all 0.3s ease;
+.opt{
+  --w:88px; --h:44px; --r:14px;
+  position:relative; width:var(--w); height:var(--h);
+  background:transparent; border:none; border-radius:var(--r); cursor:pointer;
+  transition:background .2s ease, box-shadow .2s ease;
+  outline:none;
 }
-
-.dot-wrapper:hover {
-  background-color: rgba(255,255,255,0.5);
-}
-
-.dot-wrapper.active {
-  background-color: white;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
+/* .opt:focus{ box-shadow:0 0 0 3px rgba(99,102,241,.25); } */
 
 .dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  transition: all 0.3s ease;
+  --size: 14px;
+  position: absolute;
+  top: 50%;
+  left: 50%; 
+  transform: translate(-50%, -50%);
+  width: var(--size);
+  height: var(--size);
+  border-radius: 9999px;
+  background: currentColor;
+  transition: background 0.2s ease; /* removed left/transform transition */
 }
 
-.dot.agree {
-  background-color: #4CAF50;
-}
+/* 顏色 */
+.is-agree{ color:#16a34a; }   /* 綠 */
+.is-default{ color:#2563eb; } /* 藍 */
+.is-reject{ color:#dc2626; }  /* 紅 */
 
-.dot.default {
-  background-color: #2196F3;
-}
-
-.dot.reject {
-  background-color: #f44336;
-}
-
-.dot-wrapper:not(.active) .dot {
-  opacity: 0.5;
-}
+/* 選取時彩色膠囊、白點置中（符合截圖） */
+.opt.active{ color:#fff; }
+.is-agree.active{ background:#16a34a; }
+.is-default.active{ background:#2563eb; }
+.is-reject.active{ background:#dc2626; }
+.opt.active .dot{ background:#fff; left:50%; transform:translate(-50%,-50%); }
 </style>
