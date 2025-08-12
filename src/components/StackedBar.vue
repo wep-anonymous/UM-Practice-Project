@@ -36,10 +36,10 @@ export default {
       hoverIndex: -1,
       // Data model: labels, colors, and percentages (sum = 100)
       segments: [
-        { name: '北部', color: '#16a34a', value: 15, borderRadius: [10, 0, 0, 10] },
+        { name: '北部', color: '#16a34a', value: 15, borderRadius: [15, 0, 0, 15] },
         { name: '中部', color: '#2563eb', value: 25 },
         { name: '南部', color: '#f59e0b', value: 35 },
-        { name: '西部', color: '#ef4444', value: 25, borderRadius: [0, 10, 10, 0] }
+        { name: '西部', color: '#ef4444', value: 25, borderRadius: [0, 15, 15, 0] }
       ]
     }
   },
@@ -83,7 +83,7 @@ export default {
           name: seg.name,
           type: 'bar',
           stack: 'total',                // One stacked bar (all series share the stack)
-          barWidth: 16,
+          barWidth: 30,
           data: [seg.value],
           itemStyle: { color: seg.color, borderRadius: seg.borderRadius || 0 }, // Rounded ends only
           emphasis: { itemStyle: { opacity: 1 } }, // Full opacity on focus
