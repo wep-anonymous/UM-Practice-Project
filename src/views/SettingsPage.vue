@@ -1,16 +1,18 @@
 <template>
+  <!-- Page layout: header + sections for Server A/B/C, System, and actions. -->
   <div class="settings-page">
     <header class="page-header">
       <h1 class="title">系統設定</h1>
       <p class="subtitle">請完成各伺服器與系統參數設定後再儲存。</p>
     </header>
 
-    <!-- Server A -->
+    <!-- Server A: IP and monitor seconds with real-time validation messages. -->
     <section class="card">
       <h2 class="card-title">Server A</h2>
       <div class="form-grid">
         <div class="field">
           <label for="a-ip">IP 位址</label>
+          <!-- v-model.trim keeps the input clean; shows error style when invalid. -->
           <input
             id="a-ip"
             v-model.trim="settings.serverA_ip"
@@ -19,12 +21,14 @@
             inputmode="numeric"
             aria-describedby="a-ip-help"
           />
+          <!-- Helper text is linked for screen readers via aria-describedby. -->
           <small id="a-ip-help" class="help">支援 IPv4，必填。</small>
           <p v-if="errors.serverA_ip" class="error">{{ errors.serverA_ip }}</p>
         </div>
 
         <div class="field">
           <label for="a-sec">監聽秒數</label>
+          <!-- v-model.number converts to number; min/max/step limit the range. -->
           <input
             id="a-sec"
             v-model.number="settings.serverA_monitor_second"
@@ -42,7 +46,7 @@
       </div>
     </section>
 
-    <!-- Server B -->
+    <!-- Server B: domain and optional test IP with validation. -->
     <section class="card">
       <h2 class="card-title">Server B</h2>
       <div class="form-grid">
@@ -73,12 +77,13 @@
       </div>
     </section>
 
-    <!-- Server C -->
+    <!-- Server C: two toggle switches (custom component) and API key show/hide. -->
     <section class="card">
       <h2 class="card-title">Server C</h2>
       <div class="form-grid">
         <div class="field">
           <label for="c1">服務 C1 啟用</label>
+          <!-- cus-btn uses v-model to bind boolean; badge reflects current state. -->
           <div class="inline">
             <cus-btn id="c1" v-model="settings.serverC_c1_status" />
             <span class="badge" :class="settings.serverC_c1_status ? 'on' : 'off'">
@@ -99,6 +104,7 @@
 
         <div class="field field-colspan">
           <label for="api-key">API Key</label>
+          <!-- Password field can be toggled to plain text; shows error when empty. -->
           <div class="with-action">
             <input
               id="api-key"
@@ -116,12 +122,13 @@
       </div>
     </section>
 
-    <!-- System -->
+    <!-- System: date/time bound to a computed helper + timezone select. -->
     <section class="card">
       <h2 class="card-title">系統設定</h2>
       <div class="form-grid">
         <div class="field">
           <label for="sys-dt">日期時間</label>
+          <!-- Uses type=datetime-local for easy input; bound to computed to keep storage format. -->
           <input
             id="sys-dt"
             type="datetime-local"
@@ -135,6 +142,7 @@
 
         <div class="field">
           <label for="tz">時區</label>
+          <!-- Options come from a simple array. -->
           <select id="tz" v-model="settings.system_timezone">
             <option v-for="tz in timezones" :key="tz" :value="tz">{{ tz }}</option>
           </select>
@@ -142,11 +150,12 @@
       </div>
     </section>
 
-    <!-- Preview & actions -->
+    <!-- Preview and quick actions: show JSON, copy, and show unsaved flag. -->
     <section class="card">
       <div class="card-title-row">
         <h2 class="card-title">目前設定 JSON</h2>
         <div class="card-actions">
+          <!-- isDirty tells if there are unsaved changes. -->
           <span class="dirty" v-if="isDirty">未儲存變更</span>
           <button class="btn ghost" type="button" @click="copyJson">複製 JSON</button>
         </div>
@@ -154,6 +163,7 @@
       <pre class="preview">{{ prettySettings }}</pre>
     </section>
 
+    <!-- Bottom action bar: restore defaults, undo to last saved, save (disabled when invalid). -->
     <div class="action-bar">
       <button class="btn" type="button" @click="restoreDefaults">回復預設</button>
       <div class="spacer"></div>
@@ -166,11 +176,13 @@
 <script>
 import CusBtn from '../components/CusBtn.vue'
 
+/* Simple patterns for IPv4 and domain validation. */
 const ipv4 =
   /^(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)$/
 const domain =
   /^(?=.{1,253}$)(?!-)(?:[A-Za-z0-9-]{1,63}\.)+[A-Za-z]{2,63}$/
 
+/* Default settings and storage key. */
 const DEFAULTS = Object.freeze({
   serverA_ip: '1.1.1.1',
   serverA_monitor_second: 30,
@@ -190,10 +202,10 @@ export default {
   components: { CusBtn },
   data () {
     return {
-      settings: { ...DEFAULTS },
-      lastSaved: null,
-      showApi: false,
-      timezones: [
+      settings: { ...DEFAULTS },  // current working copy
+      lastSaved: null,            // snapshot used for "undo changes"
+      showApi: false,             // show/hide API key text
+      timezones: [                // simple timezone list
         'Asia/Taipei',
         'UTC',
         'Asia/Tokyo',
@@ -205,7 +217,7 @@ export default {
     }
   },
   computed: {
-    // Bind datetime-local without changing stored format
+    /* Bind to <input type="datetime-local"> without changing stored format (space vs T). */
     datetimeLocal: {
       get () {
         return (this.settings.system_datetime || '').replace(' ', 'T')
@@ -214,6 +226,7 @@ export default {
         this.settings.system_datetime = (val || '').replace('T', ' ')
       }
     },
+    /* Build a simple errors object; empty object means all good. */
     errors () {
       const e = {}
 
@@ -244,20 +257,23 @@ export default {
 
       return e
     },
+    /* Disable Save when any error exists. */
     isInvalid () {
       return Object.keys(this.errors).length > 0
     },
+    /* Tell if current settings differ from the last saved snapshot. */
     isDirty () {
       const current = JSON.stringify(this.settings)
       const saved = JSON.stringify(this.lastSaved || this.settings)
       return current !== saved
     },
+    /* Pretty JSON for the preview box. */
     prettySettings () {
       return JSON.stringify(this.settings, null, 2)
     }
   },
   created () {
-    // Load from localStorage if available; else use defaults
+    // Load from browser storage if present; fall back to defaults.
     const raw = window.localStorage.getItem(STORAGE_KEY)
     if (raw) {
       try {
@@ -267,46 +283,50 @@ export default {
         // ignore corrupted storage
       }
     }
-    // mark snapshot
+    // Take initial snapshot for "undo changes".
     this.lastSaved = JSON.parse(JSON.stringify(this.settings))
 
-    // navigation guard for unsaved changes
+    // Warn before closing the tab if there are unsaved changes.
     window.addEventListener('beforeunload', this.beforeUnload)
   },
   beforeDestroy () {
+    // Clean up the listener.
     window.removeEventListener('beforeunload', this.beforeUnload)
   },
   methods: {
+    /* Block page unload when there are unsaved changes. */
     beforeUnload (e) {
       if (this.isDirty) {
         e.preventDefault()
         e.returnValue = ''
       }
     },
+    /* Save to browser storage, refresh snapshot, and notify the user. */
     saveSettings () {
       if (this.isInvalid) return
-      // persist
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(this.settings))
       this.lastSaved = JSON.parse(JSON.stringify(this.settings))
       alert('設定已儲存。')
-      // 模擬提交
-      // console.log('Settings saved:', this.settings)
+      // console.log('Settings saved:', this.settings) // mock submit
     },
+    /* Revert to the last saved snapshot. */
     resetToLastSaved () {
       if (!this.lastSaved) return
       this.settings = JSON.parse(JSON.stringify(this.lastSaved))
     },
+    /* Restore all fields to default values (with confirmation). */
     restoreDefaults () {
       if (confirm('確定要回復預設值？未儲存變更將遺失。')) {
         this.settings = { ...DEFAULTS }
       }
     },
+    /* Copy the current JSON to the clipboard; provide a simple fallback. */
     async copyJson () {
       try {
         await navigator.clipboard.writeText(this.prettySettings)
         alert('已複製 JSON。')
       } catch (_) {
-        // Fallback
+        // Fallback for older browsers.
         const ta = document.createElement('textarea')
         ta.value = this.prettySettings
         document.body.appendChild(ta)
@@ -321,7 +341,7 @@ export default {
 </script>
 
 <style scoped>
-/* Layout */
+/* Layout: centered page with comfortable spacing and readable colors. */
 .settings-page {
   max-width: 1000px;
   margin: 24px auto 96px;
@@ -333,7 +353,7 @@ export default {
 .title { margin: 0 0 4px; font-size: 28px; font-weight: 800; }
 .subtitle { margin: 0; color: #475569; }
 
-/* Card */
+/* Card: reusable container with border and shadow. */
 .card {
   background: #fff;
   border: 1px solid #e2e8f0;
@@ -349,7 +369,7 @@ export default {
 .card-actions { display: flex; gap: 8px; align-items: center; }
 .dirty { color: #b45309; font-size: 14px; }
 
-/* Form */
+/* Form grid: two columns on wide screens, stack on small screens. */
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -379,7 +399,7 @@ input.invalid { border-color: #ef4444; }
 .error { color: #b91c1c; font-size: 12px; margin: 0; }
 .help { color: #64748b; }
 
-/* Inline switch + status */
+/* Inline switch + status badge next to it. */
 .inline { display: inline-flex; align-items: center; gap: 10px; }
 .badge {
   padding: 2px 8px; border-radius: 9999px; font-size: 12px; border: 1px solid #e2e8f0;
@@ -387,18 +407,18 @@ input.invalid { border-color: #ef4444; }
 .badge.on { background: #dcfce7; color: #065f46; border-color: #bbf7d0; }
 .badge.off { background: #fee2e2; color: #7f1d1d; border-color: #fecaca; }
 
-/* API key input with action */
+/* API key input with action button. */
 .with-action { display: flex; gap: 8px; }
 .with-action input { flex: 1; }
 
-/* Preview */
+/* JSON preview box. */
 .preview {
   margin: 0; white-space: pre-wrap; word-break: break-word;
   background: #0b1022; color: #e2e8f0; padding: 12px; border-radius: 10px;
   font-size: 13px; line-height: 1.4; max-height: 260px; overflow: auto;
 }
 
-/* Buttons */
+/* Buttons. */
 .btn {
   height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid transparent;
   background: #f1f5f9; color: #0f172a; font-weight: 600; cursor: pointer;
@@ -410,7 +430,7 @@ input.invalid { border-color: #ef4444; }
 .btn.primary:disabled { background: #c7d2fe; cursor: not-allowed; }
 .btn.ghost { background: #fff; border-color: #cbd5e1; }
 
-/* Bottom action bar */
+/* Fixed action bar at the bottom. */
 .action-bar {
   position: fixed; left: 0; right: 0; bottom: 0;
   background: rgba(255,255,255,0.98);

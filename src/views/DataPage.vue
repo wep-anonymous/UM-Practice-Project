@@ -1,13 +1,15 @@
 <template>
+  <!-- Page layout: header, toolbar, metrics, and two views (table / timeline). -->
   <div class="data-page">
     <header class="page-header">
       <h1 class="title">資料瀏覽</h1>
       <p class="subtitle">支援搜尋、群組過濾、時間排序與表格 / 時間軸切換。</p>
     </header>
 
-    <!-- Toolbar -->
+    <!-- Toolbar: controls for view switch, text search, group filter, and time order. -->
     <section class="card">
       <div class="toolbar">
+        <!-- View switch: buttons act like tabs; aria makes state clear to screen readers. -->
         <div class="view-toggle" role="tablist" aria-label="視圖切換">
           <button
             role="tab"
@@ -23,6 +25,7 @@
             @click="viewMode = 'timeline'">時間軸</button>
         </div>
 
+        <!-- Search: two-way binding (trimmed). Filters by message text. -->
         <label class="search">
           <span class="sr-only">搜尋訊息</span>
           <input
@@ -33,6 +36,7 @@
           />
         </label>
 
+        <!-- Group filter: chip buttons; selected state stored in a Set for fast checks. -->
         <div class="group-filter" aria-label="群組過濾">
           <button
             v-for="g in groups"
@@ -46,9 +50,11 @@
             <span class="dot" :style="{ background: groupColor(g) }"></span>
             群組 {{ g }}
           </button>
+          <!-- Reset all filters to defaults. -->
           <button class="chip ghost" type="button" @click="resetFilters">重設</button>
         </div>
 
+        <!-- Time sort: ascending or descending. -->
         <label class="sorter">
           <span>時間排序</span>
           <select v-model="timeOrder" aria-label="時間排序">
@@ -58,7 +64,7 @@
         </label>
       </div>
 
-      <!-- Metrics -->
+      <!-- Metrics: quick summary based on current filters. -->
       <div class="metrics">
         <div class="metric">
           <div class="metric-label">總筆數</div>
@@ -75,8 +81,9 @@
       </div>
     </section>
 
-    <!-- Views -->
+    <!-- Table view: uses the same filtered data. -->
     <section class="card" v-if="viewMode === 'table'">
+      <!-- Empty state: clear feedback when no results. -->
       <div v-if="filtered.length === 0" class="empty">
         沒有符合條件的資料。
       </div>
@@ -90,9 +97,11 @@
             </tr>
           </thead>
           <tbody>
+            <!-- Stable key from custom id (not index) for reliable updates. -->
             <tr v-for="row in filtered" :key="row.id">
               <td class="mono">{{ row.time }}</td>
               <td>
+                <!-- Color comes from groupColor; passed through a CSS variable. -->
                 <span class="tag" :style="{ '--tag': groupColor(row.group_id) }">
                   <span class="dot" :style="{ background: groupColor(row.group_id) }"></span>
                   群組 {{ row.group_id }}
@@ -105,6 +114,7 @@
       </div>
     </section>
 
+    <!-- Timeline view: groups items by time for easier reading across groups. -->
     <section class="card" v-else>
       <div v-if="groupedByTime.length === 0" class="empty">
         沒有符合條件的資料。
@@ -115,6 +125,7 @@
           <div class="tl-time">{{ slot.time }}</div>
           <div class="tl-pipe"></div>
           <div class="tl-items">
+            <!-- Inside the same time slot, sort by group id for a stable order. -->
             <div
               v-for="item in slot.items"
               :key="item.id"
@@ -133,7 +144,7 @@
       </div>
     </section>
 
-    <!-- Actions -->
+    <!-- Actions: work with the filtered result (what the user currently sees). -->
     <section class="card actions">
       <button class="btn" type="button" @click="copyJSON">複製目前結果 JSON</button>
       <button class="btn ghost" type="button" @click="exportCSV">匯出 CSV</button>
@@ -144,7 +155,8 @@
 
 <script>
 /**
- * 將 "HH:mm" 轉為分鐘數以供排序 / 比較
+ * Convert "HH:mm" to minutes since midnight for correct time comparisons.
+ * Returns -1 if input is invalid.
  */
 function timeToMinutes (t) {
   const [h, m] = (t || '').split(':').map(n => parseInt(n, 10))
@@ -154,6 +166,7 @@ function timeToMinutes (t) {
 export default {
   name: 'DataPage',
   data () {
+    // Demo data (can be replaced by API later).
     const raw = [
       {"time":"09:10","group_id":1,"message":"你好"},
       {"time":"09:10","group_id":2,"message":"出門"},
@@ -163,42 +176,41 @@ export default {
       {"time":"09:25","group_id":2,"message":"休息"},
       {"time":"09:20","group_id":1,"message":"休息"}
     ]
-    // 正規化：加上 id 與 timeValue，避免僅以索引為 key
+    // Normalize: add a stable id and precompute timeValue for faster sorting.
     const normalized = raw.map((r, i) => ({
       ...r,
       id: `${r.time}-${r.group_id}-${i}`,
       timeValue: timeToMinutes(r.time)
     }))
     return {
-      rows: normalized,
-      q: '',
-      timeOrder: 'asc', // 'asc' | 'desc'
-      viewMode: 'table', // 'table' | 'timeline'
-      selectedGroups: new Set(normalized.map(r => r.group_id)) // 預設全選
+      rows: normalized,                       // main data source
+      q: '',                                  // search text
+      timeOrder: 'asc',                       // 'asc' or 'desc'
+      viewMode: 'table',                      // 'table' or 'timeline'
+      selectedGroups: new Set(normalized.map(r => r.group_id)) // default: all groups selected
     }
   },
   computed: {
+    // Unique, sorted group ids derived from rows.
     groups () {
       const ids = Array.from(new Set(this.rows.map(r => r.group_id)))
       ids.sort((a, b) => a - b)
       return ids
     },
+    // Main pipeline: text filter → group filter → time sort.
     filtered () {
-      // 文字搜尋（訊息）
       const q = this.q.toLowerCase()
       const byText = (row) => q === '' || (row.message || '').toLowerCase().includes(q)
-      // 群組過濾
       const byGroup = (row) => this.selectedGroups.has(row.group_id)
       const arr = this.rows.filter(r => byText(r) && byGroup(r))
-      // 時間排序
       arr.sort((a, b) => {
         const comp = a.timeValue - b.timeValue
         return this.timeOrder === 'asc' ? comp : -comp
       })
       return arr
     },
+    // Build timeline slots: group items by the same time string, then sort slots by time.
     groupedByTime () {
-      // 將 filtered 依時間分組：[{ time, items: [] }]
       const map = new Map()
       for (const r of this.filtered) {
         if (!map.has(r.time)) map.set(r.time, [])
@@ -212,12 +224,13 @@ export default {
         const comp = timeToMinutes(a.time) - timeToMinutes(b.time)
         return this.timeOrder === 'asc' ? comp : -comp
       })
-      // 讓同時間內的項目視覺更穩定：依 group_id 再排一次
+      // Keep items inside the same slot in a stable order.
       for (const s of arr) {
         s.items.sort((a, b) => a.group_id - b.group_id)
       }
       return arr
     },
+    // Show earliest and latest time based on the filtered list.
     timeRange () {
       if (this.filtered.length === 0) return '—'
       const times = this.filtered.map(r => r.timeValue)
@@ -232,31 +245,33 @@ export default {
     }
   },
   methods: {
+    // Map each group id to a fixed color. No external library needed.
     groupColor (g) {
-      // 穩定配色（不依賴外部套件）
       const palette = ['#4f63ee', '#16a34a', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f43f5e']
       return palette[(g - 1) % palette.length]
     },
+    // Toggle a group: clone the Set so Vue sees the change; keep at least one group selected.
     toggleGroup (g) {
       const s = new Set(this.selectedGroups)
       if (s.has(g)) s.delete(g)
       else s.add(g)
-      // 至少保留一個群組，避免全清空
       if (s.size === 0) return
       this.selectedGroups = s
     },
+    // Reset all filters to their initial state.
     resetFilters () {
       this.q = ''
       this.timeOrder = 'asc'
       this.selectedGroups = new Set(this.groups)
     },
+    // Copy current filtered data as pretty-printed JSON. Uses Clipboard API; falls back if needed.
     async copyJSON () {
       const data = JSON.stringify(this.filtered, null, 2)
       try {
         await navigator.clipboard.writeText(data)
         alert('已複製目前結果 JSON。')
       } catch (e) {
-        // fallback
+        // Fallback for older browsers.
         const ta = document.createElement('textarea')
         ta.value = data
         document.body.appendChild(ta)
@@ -266,11 +281,12 @@ export default {
         alert('已複製目前結果 JSON。')
       }
     },
+    // Export filtered data to CSV on the client (no server call).
     exportCSV () {
       const header = ['time', 'group_id', 'message']
       const lines = [header.join(',')]
       for (const r of this.filtered) {
-        // 簡單 CSV 轉義
+        // Basic escaping for quotes.
         const msg = (r.message || '').replace(/"/g, '""')
         lines.push([r.time, r.group_id, `"${msg}"`].join(','))
       }
@@ -289,7 +305,7 @@ export default {
 </script>
 
 <style scoped>
-/* Layout & Typography */
+/* Page layout: centered container, card sections, readable typography. */
 .data-page { max-width: 1000px; margin: 24px auto 96px; padding: 0 16px; color: #0f172a; }
 .title { margin: 0 0 4px; font-size: 28px; font-weight: 800; }
 .subtitle { margin: 0; color: #475569; }
@@ -298,21 +314,24 @@ export default {
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
 }
 
-/* Toolbar */
+/* Toolbar layout: grid on wide screens, single column on small screens. */
 .toolbar { display: grid; grid-template-columns: auto 1fr auto; grid-row-gap: 12px; grid-column-gap: 12px; align-items: center; }
 @media (max-width: 720px) { .toolbar { grid-template-columns: 1fr; } }
 
+/* Segmented view switch. */
 .view-toggle { display: inline-flex; background: #f1f5f9; border-radius: 9999px; padding: 4px; }
 .seg {
   border: 0; background: transparent; padding: 6px 12px; border-radius: 9999px; cursor: pointer; font-weight: 700; color: #334155;
 }
 .seg.active { background: #fff; color: #111827; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
 
+/* Search input styling. */
 .search input {
   width: 100%; height: 40px; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0 12px; font-size: 14px;
 }
 .search input:focus { outline: none; border-color: #4f46e5; }
 
+/* Group chips. */
 .group-filter { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip {
   display: inline-flex; align-items: center; gap: 8px;
@@ -322,19 +341,20 @@ export default {
 .chip.selected { border-color: var(--chip); box-shadow: inset 0 0 0 999px rgba(0,0,0,0.02); }
 .chip.ghost { color: #334155; background: #f8fafc; }
 
+/* Sorter select. */
 .sorter { display: inline-flex; align-items: center; gap: 8px; }
 .sorter select {
   height: 36px; border-radius: 10px; border: 1px solid #cbd5e1; padding: 0 8px;
 }
 
-/* Metrics */
+/* Metrics grid. */
 .metrics { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; margin-top: 12px; }
 @media (max-width: 720px) { .metrics { grid-template-columns: 1fr; } }
 .metric { padding: 12px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; }
 .metric-label { font-size: 12px; color: #64748b; }
 .metric-value { font-weight: 800; font-size: 18px; }
 
-/* Table */
+/* Table: sticky header for long lists. */
 .table-wrap { overflow: auto; border-radius: 12px; border: 1px solid #e2e8f0; }
 .table { width: 100%; border-collapse: separate; border-spacing: 0; }
 .table thead th {
@@ -345,12 +365,13 @@ export default {
 .table tbody tr:hover { background: #f8fafc; }
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
 
+/* Group tag style. */
 .tag {
   display: inline-flex; align-items: center; gap: 8px; padding: 2px 10px; border-radius: 9999px;
   background: #fff; border: 1px solid var(--tag, #cbd5e1); color: #0f172a;
 }
 
-/* Timeline */
+/* Timeline layout. */
 .timeline { position: relative; display: flex; flex-direction: column; gap: 20px; }
 .tl-slot { display: grid; grid-template-columns: 80px 12px 1fr; gap: 12px; align-items: flex-start; }
 .tl-time { font-weight: 800; color: #111827; text-align: right; padding-top: 6px; }
@@ -366,7 +387,7 @@ export default {
 .tl-group { font-size: 13px; }
 .tl-msg { color: #111827; }
 
-/* Actions */
+/* Action buttons. */
 .actions { display: flex; align-items: center; gap: 8px; }
 .btn {
   height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid transparent; background: #f1f5f9; color: #0f172a; font-weight: 600; cursor: pointer;
@@ -375,6 +396,6 @@ export default {
 .btn.ghost { background: #fff; border-color: #cbd5e1; }
 .hint { color: #64748b; font-size: 12px; margin-left: 4px; }
 
-/* A11y helpers */
+/* Screen-reader-only text: visible to assistive tech, hidden visually. */
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
 </style>
